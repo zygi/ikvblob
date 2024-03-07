@@ -1,0 +1,15 @@
+[package]
+name = "ikvblob_bin"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "test"
+path = "src/bin/test.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+memmap2 = "*"
+rand = "*"
+ikvblob = { path = "../ikvblob_lib" }
+env_logger = "*"

@@ -1,0 +1,22 @@
+[package]
+name = "ikvblob_js"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+name = "ikvblob_js"
+crate-type = ["cdylib"]
+
+
+[dependencies]
+ikvblob = { path = "../ikvblob_lib" }
+wasm-bindgen = "0.2.91"
+wasm-bindgen-futures = "0.4"
+js-sys = "*"
+futures = "*"
+getrandom = { version = "0.2", features = ["js"] }
+
+zstd = { version = "*", features = ["legacy", "arrays"] }
+wasm-bindgen-test = "*"
+wasm-logger = "*"

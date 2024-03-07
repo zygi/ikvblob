@@ -1,0 +1,29 @@
+[package]
+name = "ikvblob"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "ikvblob"
+
+[dependencies]
+hex = "*"
+base64 = "*"
+log = "0.4"
+
+zstd = {version = "*", features = ["legacy", "arrays"]}
+rayon = "*"
+indicatif = {version = "*", features = ["rayon"]}
+rand = "*"
+memmap2 = "*"
+siphasher = "1"
+byteorder = "*"
+ciborium = "*"
+crc32fast = "*"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+
