@@ -228,10 +228,10 @@ where
     }
 }
 
-impl<'a, M: Memory, K: std::fmt::Debug> IkvblobView<'a, M, K, (u64, u32)>
+impl<'a, M: Memory, K: std::fmt::Debug> IkvblobView<'a, M, K, (u64, u64)>
 where
     K: Hash + Copy + Eq,
-    Option<(K, (u64, u32))>: StaticSizeSerializable,
+    Option<(K, (u64, u64))>: StaticSizeSerializable,
     K: StaticSizeSerializable,
 {
     fn try_decompress(&self, bytes: &[u8]) -> Result<Vec<u8>, IkvblobError> {
@@ -304,7 +304,7 @@ mod tests {
         let kvs = (0..test_size).map(|i| {
             (
                 Multihash::<32>::wrap(2, [i as u8; 32]),
-                (i as u64, 1 as u32),
+                (i as u64, 1 as u64),
             )
         });
         let table = StaticCuckooTable::<8, 2, _, _>::from_iter(kvs, 1.2);
@@ -319,7 +319,7 @@ mod tests {
         let (_, cuckoo_reconstr, _) = view._read_debug().await;
         let reconstr_tpd = cuckoo_reconstr
             .into_iter()
-            .map(|x| TryInto::<[Option<(Multihash<32>, (u64, u32))>; 8]>::try_into(x).unwrap())
+            .map(|x| TryInto::<[Option<(Multihash<32>, (u64, u64))>; 8]>::try_into(x).unwrap())
             .collect::<Vec<_>>();
 
         assert_eq!(reconstr_tpd, table.table);

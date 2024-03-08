@@ -28,6 +28,8 @@ pub trait StaticSizeSerializable: Sized {
     }
 }
 
+const FILE_FORMAT_VERSION: u64 = 1;
+
 const MAGIC: &[u8; 8] = b"\0Ikvblob";
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IkvblobHeader {
@@ -113,6 +115,14 @@ impl StaticSizeSerializable for IkvblobHeader {
             ));
         }
         let version = read.read_u64::<LittleEndian>()?;
+
+        if version > FILE_FORMAT_VERSION {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("Unsupported IkvBlob format version: file has version {}, library supports versions <= {}", version, FILE_FORMAT_VERSION),
+            ));
+        }
+
         let dynamic_metadata_offset = read.read_u64::<LittleEndian>()?;
         let dynamic_metadata_size = read.read_u64::<LittleEndian>()?;
         let cuckoo_table_offset = read.read_u64::<LittleEndian>()?;
@@ -210,7 +220,7 @@ impl StaticSizeSerializable for Multihash<32> {
     const SER_SIZE: usize = 32 + 1;
 }
 
-type IndexTableEntry = Option<(KEY, (u64, u32))>;
+type IndexTableEntry = Option<(KEY, (u64, u64))>;
 
 impl StaticSizeSerializable for IndexTableEntry {
     fn write<W>(&self, write: &mut W) -> io::Result<()>
@@ -231,12 +241,12 @@ impl StaticSizeSerializable for IndexTableEntry {
 
                 let packed = (offset & highest_byte_inv_mask_u64) | ((key.code() as u64) << 56);
                 write.write_u64::<LittleEndian>(packed)?;
-                write.write_u32::<LittleEndian>(*size)?;
+                write.write_u64::<LittleEndian>(*size)?;
             }
             None => {
                 write.write_all(&[0u8; 32])?;
                 write.write_u64::<LittleEndian>(0)?;
-                write.write_u32::<LittleEndian>(0)?;
+                write.write_u64::<LittleEndian>(0)?;
             }
         }
         Ok(())
@@ -254,7 +264,7 @@ impl StaticSizeSerializable for IndexTableEntry {
 
         let highest_byte_inv_mask_u64 = 0x00FFFFFFFFFFFFFF;
         let packed = read.read_u64::<LittleEndian>()?;
-        let size = read.read_u32::<LittleEndian>()?;
+        let size = read.read_u64::<LittleEndian>()?;
 
         let hash_type = (packed >> 56) as u8;
         let offset = packed & highest_byte_inv_mask_u64;
@@ -268,7 +278,7 @@ impl StaticSizeSerializable for IndexTableEntry {
         }
     }
 
-    const SER_SIZE: usize = 32 + std::mem::size_of::<u64>() + std::mem::size_of::<u32>();
+    const SER_SIZE: usize = 32 + 2 * std::mem::size_of::<u64>();
 }
 
 pub fn write_combined_file<const BS: usize, const HS: usize, K, V, R: io::Read, W: io::Write>(
@@ -303,7 +313,7 @@ where
     md_bytes.resize(aligned_md_size, 0);
 
     let header = IkvblobHeader {
-        version: 1,
+        version: FILE_FORMAT_VERSION,
         dynamic_metadata_offset: IkvblobHeader::SER_SIZE as u64,
         dynamic_metadata_size: md_size as u64,
         cuckoo_table_offset: IkvblobHeader::SER_SIZE as u64 + aligned_md_size as u64,
